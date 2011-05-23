@@ -1,0 +1,15 @@
+-define (CAPABILITIES_TRANSMIT, "200 MODE READER").  
+-define (CAPABILITIES_READER, "101 Capabilities list").
+-define (SWITCHED_TO_MODE_READER, "200 Reader mode, posting permitted").
+-define (INTERNAL_ERROR, "403 Internal error of the server").
+-define (ERROR_UNKNOWN_COMMAND, "500 Command not recognized").
+-define (ERROR_BAD_SYNTAX, "501 Bad syntax or too many arguments").
+-define (ACKNOWLEDGE_QUIT, "205 Closing connection").
+-define (ERROR_NONEXISTENT_GROUP, "411 No such newsgroup").
+-define (ERROR_NO_NEWSGROUP_SELECTED, "412 No newsgroup selected").
+-define (ERROR_CURRENT_ARTICLE_INVALID, "420 Current article number is invalid").
+-define (ERROR_NO_ARTICLE_WITH_NUMBER, "423 No article with that number").
+-define (INPUT_ARTICLE, "340 Send article to be posted").
+-define (POSTING_FAILED, "441 Posting failed").
+-define (ARTICLE_RECEIVED, "240 Article received OK").
+-define (ERROR_NO_ARTICLE_WITH_ID, "No article with that message-id").
