@@ -1,21 +1,12 @@
 -module(configuration_handler).
--export([start/0, read/1, main_loop/1]).
+-export([start/0, read/1]).
 
 start() ->
-    SettingsTable = read_config ("/etc/erlnntp.conf"),
-    register(configuration_handler, spawn (?MODULE, main_loop, [SettingsTable])).
-
-main_loop(SettingsTable) ->
-    receive
-        {Pid, conf_listening_port} -> 
-            [{_,Port}] = ets:lookup (SettingsTable,"Port"),
-            Pid ! {reply, list_to_integer(Port)},
-            main_loop(SettingsTable)
-    end.
+    read_config ("/etc/erlnntp.conf").
 
 read_config (FileName) ->
     {ok, Fd} = file:open (FileName, [read]),
-    SettingsTable = ets:new(myTable, []),
+    SettingsTable = ets:new(settings, [named_table]),
     read_content_of_config (Fd, SettingsTable).
 
 read_content_of_config (Fd, SettingsTable) ->
@@ -36,9 +27,26 @@ process_line (Line) ->
     Value  = string:substr (StrippedLine, TabPos+1),
     {Keyword, Value}.
 
+read (conf_greeting_message) ->
+    read_value ("Greeting", str);
+
 read (conf_listening_port) ->
-    configuration_handler ! {self(), conf_listening_port},
-    receive
-        {reply, Reply} -> Reply
+    read_value ("Port", int).
+
+read_value (Parameter, int) ->
+    case ets:lookup (settings, Parameter) of
+        [{_, Value}] ->
+            list_to_integer(Value);
+        [] ->
+            [{_, Value}] = ets:lookup (default_settings, Parameter),
+            Value
+    end;
+
+read_value (Parameter, str) ->
+    case ets:lookup (settings, Parameter) of
+        [{_, Value}] ->
+            Value;
+        [] ->
+            [{_, Value}] = ets:lookup (default_settings, Parameter),
+            Value
     end.
-    
