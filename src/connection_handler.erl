@@ -66,16 +66,16 @@ get_requests(Socket, Pid, Buf) ->
 %% Opts is the list of tuples with message properties (user credentials for 
 %% example).
 
-handle_call ({capabilities, []}, _From, State=[Mode, CurGroup, CurArticle]) ->
+handle_call ({capabilities, []}, _From, State=[Mode, _CurGroup, _CurArticle]) ->
     case Mode of
         reader -> {reply,{ok, ?CAPABILITIES_READER},State};
         transmit -> {reply,{ok, ?CAPABILITIES_TRANSMIT}, State}
     end;
  
-handle_call ({mode_reader, []}, _From, State=[Mode, CurGroup, CurArticle]) ->
+handle_call ({mode_reader, []}, _From, _State=[_Mode, CurGroup, CurArticle]) ->
     {reply, {ok, ?SWITCHED_TO_MODE_READER}, [reader, CurGroup, CurArticle]};
 
-handle_call ({group, [{group_name,GroupName}]}, _From, State=[Mode, CurGroup, CurArticle]) ->
+handle_call ({group, [{group_name,GroupName}]}, _From, State=[Mode, _CurGroup, _CurArticle]) ->
     case db_handler:get_group_info(GroupName) of
         {group, Group} ->
             GroupDescription = get_group_description(Group),
@@ -85,7 +85,7 @@ handle_call ({group, [{group_name,GroupName}]}, _From, State=[Mode, CurGroup, Cu
             {reply, {ok, ?ERROR_NONEXISTENT_GROUP}, State}
     end;
 
-handle_call ({listgroup, []}, _From, State=[Mode, CurGroup, CurArticle]) ->
+handle_call ({listgroup, []}, _From, State=[Mode, CurGroup, _CurArticle]) ->
     case CurGroup of 
         invalid -> 
             {reply, {ok, ?ERROR_NO_NEWSGROUP_SELECTED}, State};
@@ -96,7 +96,7 @@ handle_call ({listgroup, []}, _From, State=[Mode, CurGroup, CurArticle]) ->
             {reply, {ok, multiline, Response}, [Mode, CurGroup, db_handler:get_first_number_from_group(CurGroup)]} 
     end; 
  
-handle_call ({listgroup, [{group_name, GroupName}]}, _From, State=[Mode, CurGroup, CurArticle]) ->
+handle_call ({listgroup, [{group_name, GroupName}]}, _From, State=[Mode, _CurGroup, _CurArticle]) ->
     GroupDescription = get_group_descr(GroupName),
     case GroupDescription of 
         "" ->
@@ -108,7 +108,7 @@ handle_call ({listgroup, [{group_name, GroupName}]}, _From, State=[Mode, CurGrou
     end;
     
 
-handle_call ({listgroup, [{range, RangeFrom, RangeTo},{group_name, GroupName}]}, _From, State=[Mode, CurGroup, CurArticle]) ->
+handle_call ({listgroup, [{range, RangeFrom, RangeTo},{group_name, GroupName}]}, _From, State=[Mode, _CurGroup, _CurArticle]) ->
     GroupDescription = get_group_descr(GroupName),
     case GroupDescription of 
         "" ->
@@ -119,7 +119,7 @@ handle_call ({listgroup, [{range, RangeFrom, RangeTo},{group_name, GroupName}]},
             {reply, {ok, multiline, Response}, [Mode, GroupName, db_handler:get_first_number_from_group(GroupName)]}
     end;
 
-handle_call ({last, []}, _From, State=[Mode, CurGroup, CurArticle]) ->
+handle_call ({last, []}, _From, State=[_Mode, CurGroup, CurArticle]) ->
     case CurGroup of
         invalid ->
             {reply, {ok, ?ERROR_NO_NEWSGROUP_SELECTED}, State};
@@ -132,7 +132,7 @@ handle_call ({last, []}, _From, State=[Mode, CurGroup, CurArticle]) ->
             end
     end;
 
-handle_call ({next, []}, _From, State=[Mode, CurGroup, CurArticle]) ->
+handle_call ({next, []}, _From, State=[_Mode, CurGroup, CurArticle]) ->
     case CurGroup of
        invalid ->
            {reply, {ok, ?ERROR_NO_NEWSGROUP_SELECTED}, State};
@@ -146,7 +146,7 @@ handle_call ({next, []}, _From, State=[Mode, CurGroup, CurArticle]) ->
     end;
 
 
-handle_call ({article, []}, _From, State=[Mode, CurGroup, CurArticle]) ->
+handle_call ({article, []}, _From, State=[_Mode, CurGroup, CurArticle]) ->
     case CurGroup of 
        invalid ->
            {reply, {ok, ?ERROR_NO_NEWSGROUP_SELECTED}, State};
@@ -161,7 +161,7 @@ handle_call ({article, []}, _From, State=[Mode, CurGroup, CurArticle]) ->
            end
    end;
 
-handle_call ({article, [{num, ArtNum}]}, _From, State=[Mode, CurGroup, CurArticle]) ->
+handle_call ({article, [{num, ArtNum}]}, _From, State=[Mode, CurGroup, _CurArticle]) ->
     case CurGroup of
        invalid ->
            {reply, {ok, ?ERROR_NO_NEWSGROUP_SELECTED}, State};
@@ -175,7 +175,7 @@ handle_call ({article, [{num, ArtNum}]}, _From, State=[Mode, CurGroup, CurArticl
            end
    end;
  
-handle_call ({article, [{message_id, MessageId}]}, _From, State=[Mode, CurGroup, CurArticle]) ->
+handle_call ({article, [{message_id, MessageId}]}, _From, State) ->
     case db_handler:read_article (MessageId) of
         {error, _} -> 
             {reply, {ok, ?ERROR_NO_ARTICLE_WITH_ID}, State};
@@ -184,12 +184,12 @@ handle_call ({article, [{message_id, MessageId}]}, _From, State=[Mode, CurGroup,
             {reply, {ok, multiline, Response}, State}
     end;
  
-handle_call ({list_cmd, []}, _From, State=[Mode, CurGroup, CurArticle]) ->
+handle_call ({list_cmd, []}, _From, State) ->
     GroupNames = db_handler:get_group_list_entries(),
     Response = ["215 list of newsgroups follows" | GroupNames],
     {reply, {ok, multiline, Response}, State};
  
-handle_call ({list_newsgroups, []}, _From, State=[Mode, CurGroup, CurArticle]) ->
+handle_call ({list_newsgroups, []}, _From, State) ->
     GroupDescrs = db_handler:get_group_descrs(),
     Response = ["215 information follows" | GroupDescrs],
     {reply, {ok, multiline, Response}, State}.
@@ -199,7 +199,7 @@ handle_cast (_, _) -> ok.
 handle_info (_Info, State) -> 
     {noreply, State}.
 
-terminate (_Reason, State) -> ok.
+terminate (_Reason, _State) -> ok.
 
 code_change (_, _, _) -> ok.
  
