@@ -4,8 +4,15 @@
 
 start(_,_) ->
     configuration_handler:start(),
-    {ok, Pid} = erlnntp_sup:start_link(),
-    {ok, Pid}.
+    try application:start(syslog) of
+        ok ->
+            {ok, Pid} = erlnntp_sup:start_link(),
+            {ok, Pid}
+    catch
+        _:_ ->
+            io:format ("Failed to start erlang-syslog application. Check its existance"),
+            {error, syslog_failed}
+    end.
 
 stop (_) ->
     ok.
