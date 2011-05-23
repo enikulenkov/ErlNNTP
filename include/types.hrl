@@ -1,0 +1,2 @@
+-record (group, {name, articles_count, low_bound, high_bound, short_descr, status}).
+-record (article, {id, group, number, body, head, time}).
