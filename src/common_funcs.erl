@@ -1,5 +1,5 @@
 -module(common_funcs).
--export([parse_datetime/1, get_unix_timestamp/1, trim_whitespace/1]).
+-export([parse_datetime/1, get_unix_timestamp/1, trim_whitespace/1,get_full_message_body/1, is_group_empty/1]).
 -include("types.hrl").
 
 %%Time functions
