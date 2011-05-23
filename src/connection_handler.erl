@@ -155,8 +155,8 @@ handle_call ({article, []}, _From, State=[_Mode, CurGroup, CurArticle]) ->
                invalid ->
                    {reply, {ok, ?ERROR_CURRENT_ARTICLE_INVALID}, State};
                _ ->
-                   {ok,Article} = db_handler:read_article (CurGroup, CurArticle),
-                   Response = ["220 " ++ Article#article.number ++ " " ++ Article#article.id | Article],
+                   {ok,Article} = db_handler:read_article ({group_and_article_number, CurGroup, CurArticle}),
+                   Response = ["220 " ++ integer_to_list(Article#article.number) ++ " " ++ Article#article.id | [common_funcs:get_full_message_body(Article)]],
                    {reply, {ok, multiline, Response}, State}
            end
    end;
