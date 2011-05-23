@@ -15,4 +15,5 @@ start(_,_) ->
     end.
 
 stop (_) ->
+    application:stop(syslog),
     ok.
