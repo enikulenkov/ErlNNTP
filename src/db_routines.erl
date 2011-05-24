@@ -1,5 +1,5 @@
 -module(db_routines).
--export([get_group_info/1, write_article/1, get_all_group_article_numbers/1, get_all_group_article_numbers_r/3, get_group_first_number/1, get_group_names/0, get_article/2, get_group_list_entries/0]).
+-export([get_group_info/1, write_article/1, get_all_group_article_numbers/1, get_all_group_article_numbers_r/3, get_group_first_number/1, get_group_names/0, get_article/2, get_group_list_entries/0, update_group/1, get_group_short_descrs/0, inc_counters_in_group/2]).
 -include("types.hrl").
 -define (pool, test1).
 
@@ -13,6 +13,13 @@ get_group_info (GroupName) ->
 
 update_group (#group{name=GroupName}=Group) ->
     emongo:update (test1, "groups", [{"name", GroupName}], from_group_rec_to_doc(Group)).
+
+inc_counters_in_group (GroupName, UpdLowBound) when UpdLowBound == true ->
+    emongo:update (test1, "groups", [{"name", GroupName}], [{"$inc", [{"articles_count",1}, {"high_bound",1}, {"low_bound",1}]}]);
+
+
+inc_counters_in_group (GroupName, UpdLowBound) when UpdLowBound == false ->
+    emongo:update (test1, "groups", [{"name", GroupName}], [{"$inc", [{"articles_count",1}, {"high_bound",1}]}]).
 
 
 remove_id_field_from_doc ([{<<"_id">>,_}|Meaningful]) ->
@@ -88,7 +95,7 @@ extract_numbers_from_db_response (Response) ->
 
 get_group_first_number (GroupName) ->
     [Doc] = emongo:find_one (test1, "groups", [{"name", GroupName}], [{fields, ["low_bound"]}]),
-    [{_ , Number}] = remove_id_field_from_doc(Doc).
+    [{_ , _Number}] = remove_id_field_from_doc(Doc).
 
 get_group_names () ->
     Docs = emongo:find_all (test1, "groups", [], [{fields, ["name"]}]),

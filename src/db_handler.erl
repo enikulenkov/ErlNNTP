@@ -36,17 +36,13 @@ handle_cast ({write, Message, ParsedMessage}, LoopData) ->
     MessageId = get_message_id(),
     NewHead = "Message-ID: " ++ MessageId ++ "\r\n" ++ Head,
     lists:map (fun (Group) ->
-                {ok,#group {high_bound = High}} = db_routines:get_group_info(Group),
+                {ok,GroupInfo=#group {high_bound = High}} = db_routines:get_group_info(Group),
                 Article= #article{head = NewHead, number=High + 1, id=MessageId, group=Group, time=DateTime, body=Body},
                 db_routines:write_article (Article),
-                %%update group information
-                GroupInfo = get_group_info(Group),
-                NewLowBound = case common_funcs:is_group_empty (GroupInfo) of
-                                true -> GroupInfo#group.low_bound + 1;
-                                false -> GroupInfo#group.low_bound
-                              end,
-                UpdatedGroup = GroupInfo#group{articles_count = GroupInfo#group.articles_count + 1, high_bound= GroupInfo#group.high_bound+1, low_bound=NewLowBound},
-                db_routines:update_group(UpdatedGroup)
+                case common_funcs:is_group_empty (GroupInfo) of
+                    true -> db_routines:inc_counters_in_group(Group, true);
+                    false -> db_routines:inc_counters_in_group(Group, false)
+                end
                end,
                Newsgroups),
     {noreply, LoopData}.
