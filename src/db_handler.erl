@@ -1,6 +1,6 @@
 -module (db_handler).
 -include ("types.hrl").
--export ([write_article/2, read_article/1, add_new_group/1, get_group_info/1, get_article_numbers_from_group/1, get_article_numbers_from_group_r/3, get_first_number_from_group/1, get_group_names/0, get_group_descrs/0, get_group_list_entries/0]).
+-export ([write_article/2, read_article/1, add_new_group/1, get_group_info/1, get_article_numbers_from_group/1, get_article_numbers_from_group_r/3, get_first_number_from_group/1, get_group_names/0, get_group_descrs/0, get_group_list_entries/0, get_header_values/2]).
 -export ([start_link/0, init/1, handle_cast/2, handle_call/3]).
 -behaviour(gen_server).
 
@@ -33,18 +33,38 @@ handle_cast ({write, Message, ParsedMessage}, LoopData) ->
                     _:_ -> common_funcs:get_unix_timestamp(now())
                end,
     {Head, Body} = email_parser:split_message (Message),
-    MessageId = get_message_id(),
-    NewHead = "Message-ID: " ++ MessageId ++ "\r\n" ++ Head,
-    lists:map (fun (Group) ->
+    Headers = get_needed_headers(ParsedMessage),
+    io:format ("HEADERS ~p~n", [Headers]),
+    case proplists:lookup ("Message-ID", Headers) of
+        {_Key, ""} ->
+            MessageId = get_message_id(),
+            NewHead = "Message-ID: " ++ MessageId ++ "\r\n" ++ Head,
+            NewHeaders = lists:keyreplace ("Message-ID", 1, Headers, {"MESSAGE_ID", MessageId}),
+            lists:map (
+               fun (Group) ->
                 {ok,GroupInfo=#group {high_bound = High}} = db_routines:get_group_info(Group),
                 Article= #article{head = NewHead, number=High + 1, id=MessageId, group=Group, time=DateTime, body=Body},
-                db_routines:write_article (Article),
+                db_routines:write_article (Article, NewHeaders),
                 case common_funcs:is_group_empty (GroupInfo) of
                     true -> db_routines:inc_counters_in_group(Group, true);
                     false -> db_routines:inc_counters_in_group(Group, false)
                 end
                end,
-               Newsgroups),
+               Newsgroups);
+        {_Key, Value} ->
+            MessageId = Value,
+            lists:map (
+               fun (Group) ->
+                {ok,GroupInfo=#group {high_bound = High}} = db_routines:get_group_info(Group),
+                Article= #article{head = Head, number=High + 1, id=MessageId, group=Group, time=DateTime, body=Body},
+                db_routines:write_article (Article, Headers),
+                case common_funcs:is_group_empty (GroupInfo) of
+                    true -> db_routines:inc_counters_in_group(Group, true);
+                    false -> db_routines:inc_counters_in_group(Group, false)
+                end
+               end,
+               Newsgroups)
+    end,
     {noreply, LoopData}.
 
 handle_call ({article_numbers, GroupName}, _From, LoopData) ->
@@ -77,7 +97,12 @@ handle_call ({get_group_info, GroupName}, _From, LoopData) ->
 
 handle_call ({read, GroupName, ArticleNum}, _From, LoopData) ->
     Article = db_routines:get_article (GroupName, ArticleNum),
-    {reply, {ok, Article}, LoopData}.
+    {reply, {ok, Article}, LoopData};
+
+handle_call ({header_values, GroupName, ArticleNum}, _From, LoopData) ->
+    Headers = db_routines:get_headers ({GroupName, ArticleNum}),
+    HeaderValues = [Value || {_Name, Value} <- Headers],
+    {reply, {ok, lists:append (HeaderValues, ["0","0"])}, LoopData}.
 
 %%Client functions
 
@@ -85,11 +110,11 @@ write_article (Message, Parsed_Message) ->
     do_action({write, Message, Parsed_Message}),
     ok.
 
-read_article ({article_id, ArticleID} ) ->
-    ok;
+%%read_article ({article_id, ArticleID} ) ->
+%%    ok;
 
 read_article ({group_and_article_number, Group, ArticleNum}) ->
-    {ok, Article} = do_request({read, Group, ArticleNum}).
+    {ok, _Article} = do_request({read, Group, ArticleNum}).
 
 add_new_group (GroupName) ->
     do_action ({add_group, GroupName}).
@@ -128,7 +153,25 @@ get_group_list_entries () ->
     {ok, Groups} = do_request (group_list_entries),
     Groups.
 
+get_header_values(GroupName, ArticleNum) ->
+    {ok, Headers} = do_request ({header_values, GroupName, ArticleNum}),
+    Headers.
+
 get_message_id () ->
     DomainPart = "ltd.com",
     LocalPart = random:uniform (10000000),
-    Result = "<"++ integer_to_list(LocalPart) ++ "@" ++ DomainPart ++ ">".
+    _Result = "<"++ integer_to_list(LocalPart) ++ "@" ++ DomainPart ++ ">".
+
+get_needed_headers (ParsedMessage) ->
+    Needed_headers  = ["Subject", "From", "Date", "Message-ID", "References"],
+    io:format ("ParsedMessage=~p~n",[ParsedMessage]),
+    lists:map (fun (HeaderName) ->
+                    try email_parser:get_string_header_i (ParsedMessage, HeaderName) of
+                        Value ->
+                            {HeaderName, Value}
+                    catch 
+                        _:_ ->
+                            {HeaderName, ""}
+                    end
+               end,
+               Needed_headers).

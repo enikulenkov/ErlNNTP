@@ -18,6 +18,6 @@ start(_,_) ->
 
 stop (_) ->
     ?LOG_INFO("Closing syslog application"),
-    application:stop(syslog),
+    %%application:stop(syslog),
     ?LOG_INFO("Application closed"),
     ok.

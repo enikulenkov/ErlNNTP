@@ -1,5 +1,5 @@
 -module(db_routines).
--export([get_group_info/1, write_article/1, get_all_group_article_numbers/1, get_all_group_article_numbers_r/3, get_group_first_number/1, get_group_names/0, get_article/2, get_group_list_entries/0, update_group/1, get_group_short_descrs/0, inc_counters_in_group/2]).
+-export([get_group_info/1, write_article/2, get_all_group_article_numbers/1, get_all_group_article_numbers_r/3, get_group_first_number/1, get_group_names/0, get_article/2, get_group_list_entries/0, update_group/1, get_group_short_descrs/0, inc_counters_in_group/2, get_headers/1]).
 -include("types.hrl").
 -define (pool, test1).
 
@@ -32,9 +32,9 @@ from_group_doc_to_rec ([{<<"name">>, Name},
                         {<<"short_descr">>,ShortDescr},
                         {<<"status">>,Status}]) ->
     #group {name = binary_to_list(Name),
-            articles_count = Count,
-            low_bound = Low,
-            high_bound = High,
+            articles_count = round(Count),
+            low_bound = round(Low),
+            high_bound = round(High),
             short_descr = binary_to_list(ShortDescr),
             status = binary_to_list(Status)}.
 
@@ -56,13 +56,22 @@ write_article (#article{id=MessageId,
                         group=Group, 
                         head=Head, 
                         body=Body,
-                        time=DateTime}) ->
+                        time=DateTime},
+                Headers) ->
     io:format("Saving to group: ~p~n", [Group]),
-    emongo:insert (test1, "articles", [{"group", Group},{"number", Number},{"message_id", MessageId}, {"head", Head}, {"body", Body}, {"time", DateTime}]).
+    emongo:insert (test1, "articles", [{"group", Group},{"number", Number},{"message_id", MessageId}, {"head", Head}, {"body", Body}, {"time", DateTime}, {"headers", Headers}]).
 
 get_article (GroupName, ArticleNum) ->
-    [Document] = emongo:find_one (test1, "articles",[{"group", GroupName},{"number", ArticleNum}]),
+    [Document] = emongo:find_one (test1, "articles",[{"group", GroupName},{"number", ArticleNum}],[{fields,["group","number", "message_id","head","body","time"]}]),
     from_article_doc_to_rec(remove_id_field_from_doc(Document)).
+
+get_headers ({GroupName, ArticleNum}) ->
+    [Document] = emongo:find_one (test1, "articles",[{"group", GroupName},{"number", ArticleNum}], [{fields, ["headers"]}]),
+    [{<<"headers">>,Headers}] = remove_id_field_from_doc(Document),
+    lists:map (fun ({Name, Value}) ->
+                     {binary_to_list (Name), binary_to_list (Value)}
+               end,
+               Headers).
 
 from_article_doc_to_rec ([{<<"group">>,GroupName},
                           {<<"number">>, Number},

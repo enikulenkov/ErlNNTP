@@ -4,6 +4,7 @@
 -export([init/1, handle_call/3, handle_cast/2, terminate/2, code_change/3, handle_info/2, start_link/1]).
 -include("messages.hrl").
 -include("types.hrl").
+-include("log_macros.hrl").
 
 %% @doc Initialize connection with client by sending
 %% greeting message and starting two loops. First for doing actual work 
@@ -11,14 +12,13 @@
 %% receiving messages from socket and parse them.
 
 init (Socket) ->
-    io:format ("Socket is ~p~n", [Socket]),
+    ?LOG_INFO (io_lib:format("Client connected at socket ~p", [Socket])),
     Greeting_Message = ["200 " | configuration_handler:read(conf_greeting_message)],
     send_message (Socket, Greeting_Message),
     spawn_link (?MODULE, get_requests, [Socket, self(), []]),
     {ok, [transmit, invalid, invalid]}.
 
 start_link (Socket) ->
-    io:format ("Socket is ~p~n", [Socket]),
     gen_server:start_link (?MODULE, Socket, []).
 
 %% @doc Receive messages from client and parse them by passing them to
@@ -192,7 +192,23 @@ handle_call ({list_cmd, []}, _From, State) ->
 handle_call ({list_newsgroups, []}, _From, State) ->
     GroupDescrs = db_handler:get_group_descrs(),
     Response = ["215 information follows" | GroupDescrs],
-    {reply, {ok, multiline, Response}, State}.
+    {reply, {ok, multiline, Response}, State};
+
+handle_call ({over, []}, _From, State=[_Mode, CurGroup, CurArticle]) ->
+    case CurGroup of
+        invalid ->
+            {reply, {ok, ?ERROR_NO_NEWSGROUP_SELECTED}, State};
+        _ ->
+            case CurArticle of
+                invalid ->
+                    {reply, {ok, ?ERROR_CURRENT_ARTICLE_INVALID}, State};
+                _ ->
+                    Headers = [integer_to_list(CurArticle)| db_handler:get_header_values (CurGroup, CurArticle)],
+                    Str_tabbed_headers = separate_by_tab(one,Headers),
+                    Response = ["224 Overview information follows:" , Str_tabbed_headers],
+                    {reply, {ok, multiline, Response}, State}
+            end
+    end.
 
 handle_cast (_, _) -> ok.
 
@@ -303,3 +319,11 @@ process_post_cmd (Socket) ->
                     send_message (Socket, ?POSTING_FAILED)
             end
     end.
+
+separate_by_tab (many, Lists) ->
+    _Result = [separate_by_tab (one, List) || List <- Lists];
+
+separate_by_tab (one, List) ->
+    TabList = [Str ++ "\t" || Str <- List],
+    Flattened = lists:flatten(TabList),
+    _Result = string:substr (Flattened, 1, string:len(Flattened) - 1).

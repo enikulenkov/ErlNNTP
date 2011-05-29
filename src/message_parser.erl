@@ -49,6 +49,9 @@ init_state () ->
                 "LIST" ->
                     Pid ! ok,
                     list_state ();
+                "OVER" ->
+                    Pid ! ok,
+                    over_state ();
                 _ ->
                     Pid ! {error, not_recognized_command}
             end;
@@ -68,6 +71,8 @@ init_state () ->
                     Pid ! {finished, {post, []}};
                 "LIST" ->
                     Pid ! {finished, {list_cmd, []}};
+                "OVER" ->
+                    Pid ! {finished, {over, []}};
                 _ ->
                     Pid ! {error, not_recognized_command}
             end
@@ -142,3 +147,44 @@ list_state() ->
                     Pid ! {finished, {list_newsgroups, []}}
             end
     end.
+
+over_state () ->
+    receive
+        {Pid, Message, last} ->
+            case is_message_id (Message) of
+                true ->
+                    Pid ! {finished, {over, [{msg_id, Message}]}};
+                false ->
+                    case is_range (Message) of 
+                        true ->
+                            [Range_first, Range_last] = parse_range(Message),
+                            Pid ! {finished, {over, [{range, Range_first, Range_last}]}};
+                        false ->
+                            Pid ! {error, bad_syntax}
+                    end
+            end;
+       {Pid, _} ->
+           Pid ! {error, bad_syntax}
+    end. 
+
+is_message_id (Message) ->
+    case string:chr (Message, $@) of
+        0 ->
+            false;
+        _ ->
+            true
+    end.
+
+is_range (Range) ->
+    try string:tokens (Range, "-") of
+        [Range_f, Range_s] ->
+            _ = list_to_integer(Range_f),
+            _ = list_to_integer(Range_s),
+            true
+    catch
+        _:_ ->
+            false
+    end.
+
+parse_range (Range) ->
+    [_First, _Second] = string:tokens(Range, "-").

@@ -1,5 +1,5 @@
 -module(email_parser).
--export([parse_headers/1, split_message/1, email_get_header_i/2, dump_email/1]).
+-export([parse_headers/1, split_message/1, email_get_header_i/2, get_string_header_i/2, dump_email/1]).
 
 
 legal_rfc822_header_char(X) when X =< 0, X =< 32 -> false;
@@ -78,6 +78,19 @@ email_get_header({[H|T], Body}, Name) ->
         {Name, Value} -> string:tokens(Value, ",");
         {_N, _V} -> email_get_header({T, Body}, Name)
     end.
+
+get_string_header_i(M, N) ->
+    UN = string:to_upper(N),
+    get_string_header(M, UN).
+
+get_string_header({[], _Body}, _Name) ->
+    exit(header_not_found);
+get_string_header({[H|T], Body}, Name) ->
+    case H of
+        {Name, Value} -> Value; 
+        {_N, _V} -> get_string_header({T, Body}, Name)
+    end.
+
 
 split_message(M) ->
     D = string:str(M, "\r\n\r\n"),
