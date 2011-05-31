@@ -20,5 +20,7 @@ init(_) ->
              {nntp_server, {nntp_server, start_link,[]},
               permanent, 5000, worker, [nntp_server]},
              {db_handler, {db_handler, start_link, []},
-              permanent, 5000, worker, [db_handler]}
+              permanent, 5000, worker, [db_handler]},
+             {sequence, {sequence_srv, start_link, []},
+              permanent, 5000, worker, [sequence_srv]}
             ]}}. 

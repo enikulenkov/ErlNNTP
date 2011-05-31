@@ -42,26 +42,20 @@ handle_cast ({write, Message, ParsedMessage}, LoopData) ->
             NewHeaders = lists:keyreplace ("Message-ID", 1, Headers, {"MESSAGE_ID", MessageId}),
             lists:map (
                fun (Group) ->
-                {ok,GroupInfo=#group {high_bound = High}} = db_routines:get_group_info(Group),
-                Article= #article{head = NewHead, number=High + 1, id=MessageId, group=Group, time=DateTime, body=Body},
+                {ok, ArticleNum} = sequence_srv:get_next_number(Group),
+                Article= #article{head = NewHead, number=ArticleNum + 1, id=MessageId, group=Group, time=DateTime, body=Body},
                 db_routines:write_article (Article, NewHeaders),
-                case common_funcs:is_group_empty (GroupInfo) of
-                    true -> db_routines:inc_counters_in_group(Group, true);
-                    false -> db_routines:inc_counters_in_group(Group, false)
-                end
+                db_routines:inc_counters_in_group(Group, ArticleNum)
                end,
                Newsgroups);
         {_Key, Value} ->
             MessageId = Value,
             lists:map (
                fun (Group) ->
-                {ok,GroupInfo=#group {high_bound = High}} = db_routines:get_group_info(Group),
-                Article= #article{head = Head, number=High + 1, id=MessageId, group=Group, time=DateTime, body=Body},
+                {ok, ArticleNum} = sequence_srv:get_next_number(Group),
+                Article= #article{head = Head, number=ArticleNum, id=MessageId, group=Group, time=DateTime, body=Body},
                 db_routines:write_article (Article, Headers),
-                case common_funcs:is_group_empty (GroupInfo) of
-                    true -> db_routines:inc_counters_in_group(Group, true);
-                    false -> db_routines:inc_counters_in_group(Group, false)
-                end
+                db_routines:inc_counters_in_group(Group, ArticleNum)
                end,
                Newsgroups)
     end,

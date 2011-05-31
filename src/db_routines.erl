@@ -1,5 +1,5 @@
 -module(db_routines).
--export([get_group_info/1, write_article/2, get_all_group_article_numbers/1, get_all_group_article_numbers_r/3, get_group_first_number/1, get_group_names/0, get_article/2, get_group_list_entries/0, update_group/1, get_group_short_descrs/0, inc_counters_in_group/2, get_headers/1]).
+-export([get_group_info/1, write_article/2, get_all_group_article_numbers/1, get_all_group_article_numbers_r/3, get_group_first_number/1, get_group_names/0, get_article/2, get_group_list_entries/0, update_group/1, get_group_short_descrs/0, inc_counters_in_group/2, get_headers/1,get_group_high_bounds/0]).
 -include("types.hrl").
 -define (pool, test1).
 
@@ -14,12 +14,15 @@ get_group_info (GroupName) ->
 update_group (#group{name=GroupName}=Group) ->
     emongo:update (test1, "groups", [{"name", GroupName}], from_group_rec_to_doc(Group)).
 
-inc_counters_in_group (GroupName, UpdLowBound) when UpdLowBound == true ->
-    emongo:update (test1, "groups", [{"name", GroupName}], [{"$inc", [{"articles_count",1}, {"high_bound",1}, {"low_bound",1}]}]);
+%%inc_counters_in_group (GroupName, UpdLowBound) when UpdLowBound == true ->
+%%    emongo:update (test1, "groups", [{"name", GroupName}], [{"$inc", [{"articles_count",1}, {"high_bound",1}, {"low_bound",1}]}]);
 
 
-inc_counters_in_group (GroupName, UpdLowBound) when UpdLowBound == false ->
-    emongo:update (test1, "groups", [{"name", GroupName}], [{"$inc", [{"articles_count",1}, {"high_bound",1}]}]).
+inc_counters_in_group (GroupName,ArticleNum) ->
+    %%We must update articles_count anyway
+    emongo:update (test1, "groups", [{"name", GroupName}], [{"$inc", [{"articles_count",1}]}]),
+    %%We must update high_bound only if the number of article is bigger than high_bound
+    emongo:find_and_modify (test1, "groups", [{"name", GroupName},{"high_bound",[{lt, ArticleNum}]}],[{"$set", [{"high_bound", ArticleNum}]}],[]).
 
 
 remove_id_field_from_doc ([{<<"_id">>,_}|Meaningful]) ->
@@ -111,6 +114,14 @@ get_group_names () ->
     lists:map (fun(X) ->
                 [{<<"name">>, Name}] = remove_id_field_from_doc(X),
                 binary_to_list(Name)
+               end,
+               Docs). 
+
+get_group_high_bounds () ->
+    Docs = emongo:find_all (test1, "groups", [], [{fields, ["name","high_bound"]}]),
+    lists:map (fun(X) ->
+                [{<<"name">>, Name},{<<"high_bound">>,Bound}] = remove_id_field_from_doc(X),
+                {binary_to_list(Name), Bound}
                end,
                Docs). 
 
