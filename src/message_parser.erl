@@ -46,6 +46,9 @@ init_state () ->
                 "ARTICLE" ->
                     Pid ! ok,
                     article_state ();
+                "HEAD" ->
+                    Pid ! ok,
+                    head_state ();
                 "LIST" ->
                     Pid ! ok,
                     list_state ();
@@ -67,6 +70,8 @@ init_state () ->
                     Pid ! {finished, {next, []}};
                 "ARTICLE" ->
                     Pid ! {finished, {article, []}};
+                "HEAD" ->
+                    Pid ! {finished, {head, []}};
                 "POST" ->
                     Pid ! {finished, {post, []}};
                 "LIST" ->
@@ -111,6 +116,24 @@ article_state() ->
             end;
         {Pid, _} -> Pid ! {error, bad_syntax}
     end.
+
+head_state() ->
+    receive
+        {Pid, SomeId, last} ->
+            case string:chr (SomeId, $@) of
+                0 ->
+                    try
+                        NumId = list_to_integer (SomeId),
+                        Pid ! {finished , {head, [{num, NumId}]}}
+                    catch
+                        _:_ -> {error, bad_syntax}
+                    end;
+                _ ->
+                    Pid ! {finished, {head, [{message_id, SomeId}]}}
+            end;
+        {Pid, _} -> Pid ! {error, bad_syntax}
+    end.
+
 
 listgroup_state (Opts, Waiting_for) ->
     receive

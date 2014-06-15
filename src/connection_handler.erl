@@ -28,7 +28,7 @@ start_link (Socket) ->
 get_requests(Socket, Pid, Buf) ->
     case ?MODULE:read_line(Socket, Buf) of
         {ok, Request, Buf1} ->
-            io:format ("Message recieved ~p \n", [Request]),
+            ?LOG_INFO (io_lib:format ("Message recieved ~p \n", [Request])),
             case message_parser:parse (Request) of
                 {ok, {quit,[]}} -> 
                     send_message (Socket, ?ACKNOWLEDGE_QUIT),
@@ -76,6 +76,7 @@ handle_call ({mode_reader, []}, _From, _State=[_Mode, CurGroup, CurArticle]) ->
     {reply, {ok, ?SWITCHED_TO_MODE_READER}, [reader, CurGroup, CurArticle]};
 
 handle_call ({group, [{group_name,GroupName}]}, _From, State=[Mode, _CurGroup, _CurArticle]) ->
+    ?LOG_INFO ("Processing GROUP request..."),
     case db_handler:get_group_info(GroupName) of
         {group, Group} ->
             GroupDescription = get_group_description(Group),
@@ -184,6 +185,43 @@ handle_call ({article, [{message_id, MessageId}]}, _From, State) ->
             {reply, {ok, multiline, Response}, State}
     end;
  
+handle_call ({head, []}, _From, State=[_Mode, CurGroup, CurArticle]) ->
+    case CurGroup of 
+       invalid ->
+           {reply, {ok, ?ERROR_NO_NEWSGROUP_SELECTED}, State};
+       _ ->
+           case CurArticle of
+               invalid ->
+                   {reply, {ok, ?ERROR_CURRENT_ARTICLE_INVALID}, State};
+               _ ->
+                   {ok,Article} = db_handler:read_article ({group_and_article_number, CurGroup, CurArticle}),
+                   Response = ["221 " ++ integer_to_list(Article#article.number) ++ " " ++ Article#article.id | [Article#article.head]], {reply, {ok, multiline, Response}, State}
+           end
+   end;
+
+handle_call ({head, [{num, ArtNum}]}, _From, State=[Mode, CurGroup, _CurArticle]) ->
+    case CurGroup of
+       invalid ->
+           {reply, {ok, ?ERROR_NO_NEWSGROUP_SELECTED}, State};
+       _ ->
+           case db_handler:read_article ({group_and_article_number,CurGroup, ArtNum}) of
+               {error, _} -> 
+                   {reply, {ok, ?ERROR_NO_ARTICLE_WITH_NUMBER}, State};
+               {ok, Article} ->
+                   Response = ["221 " ++ integer_to_list(Article#article.number) ++ " " ++ Article#article.id | [Article#article.head]],
+                   {reply, {ok, multiline, Response}, [Mode, CurGroup, ArtNum]}
+           end
+   end;
+ 
+handle_call ({head, [{message_id, MessageId}]}, _From, State) ->
+    case db_handler:read_article (MessageId) of
+        {error, _} -> 
+            {reply, {ok, ?ERROR_NO_ARTICLE_WITH_ID}, State};
+        {ok, Article} ->
+            Response = ["221 " ++ "0 " ++ MessageId | [Article#article.head]],
+            {reply, {ok, multiline, Response}, State}
+    end;
+
 handle_call ({list_cmd, []}, _From, State) ->
     GroupNames = db_handler:get_group_list_entries(),
     Response = ["215 list of newsgroups follows" | GroupNames],
@@ -224,13 +262,13 @@ code_change (_, _, _) -> ok.
 
 send_message (Socket, Message) ->
     FormattedMessage = Message ++ "\r\n",
-    io:format ("Response: ~p \n", [FormattedMessage]),
+    ?LOG_INFO (io_lib:format ("Response: ~p \n", [FormattedMessage])),
     gen_tcp:send(Socket, FormattedMessage).
 
 send_message (multiline, Socket, Message) ->
     MultilineMessage = multiline_cycle (Message, ""),
     FormattedMessage = MultilineMessage ++ ".\r\n",
-    io:format ("Response: ~p \n", [FormattedMessage]),
+    ?LOG_INFO(io_lib:format ("Response: ~p \n", [FormattedMessage])),
     gen_tcp:send(Socket, FormattedMessage).
 
 multiline_cycle ([], Result) -> Result;

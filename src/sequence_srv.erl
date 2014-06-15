@@ -1,4 +1,5 @@
 -module(sequence_srv).
+-include("log_macros.hrl").
 -export([get_next_number/1, update/0, start_link/0]).
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2, terminate/2, code_change/3]).
 
@@ -22,7 +23,8 @@ update () ->
     gen_server:call (sequence,update).
 
 handle_call({get_next, GroupName}, _From, Dict) ->
-    [{_GroupName, Last_Art_Num}] = ets:lookup(Dict, GroupName),
+    [{FoundGroupName, Last_Art_Num}] = ets:lookup(Dict, GroupName),
+    ?LOG_INFO(io_lib:format("Found in sequence_srv: ~p ~w", [FoundGroupName, Last_Art_Num])),
     ets:update_counter (Dict, GroupName, 1),
     {reply, {ok, Last_Art_Num + 1}, Dict};
 

@@ -68,4 +68,5 @@ fill_default_settings () ->
     Defaults = ets:new(default_settings,[named_table]),
     ets:insert(Defaults, {"Port", 119}),
     ets:insert(Defaults, {"Greeting", "ErlNNTP is ready"}),
-    ets:insert(Defaults, {"Log_level", 1}).
+    ets:insert(Defaults, {"Log_level", 1}),
+    ets:insert(Defaults, {"ServerName", "erlnntp.com"}).
