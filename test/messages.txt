@@ -1,0 +1,45 @@
+5
+Subject: C++
+From: Egor
+Newsgroups: t1
+Date: Sat, 28 May 2011 18:50:03 +0200
+
+C++ (pronounced "cee plus plus") is a statically typed, free-form, multi-paradigm, compiled, general-purpose programming language. It is regarded as an intermediate-level language, as it comprises a combination of both high-level and low-level language features. It was developed by Bjarne Stroustrup starting in 1979 at Bell Labs as an enhancement to the C language. Originally named C with Classes, the language was later renamed C++ in 1983.
+C++ is one of the most popular programming languages with application domains including systems software (such as Microsoft Windows), application software, device drivers, embedded software, high-performance server and client applications, and entertainment software such as video games. Several groups provide both free and proprietary C++ compiler software, including the GNU Project, Microsoft, Intel and Embarcadero Technologies. C++ has greatly influenced many other popular programming languages, most notably C# and Java.
+.
+--
+Subject: Java 
+From: Egor
+Newsgroups: t1
+Date: Sat, 28 May 2011 18:51:10 +0200
+
+Java is a programming language originally developed by James Gosling at Sun Microsystems (which has since merged into Oracle Corporation) and released in 1995 as a core component of Sun Microsystems' Java platform. The language derives much of its syntax from C and C++ but has a simpler object model and fewer low-level facilities. Java applications are typically compiled to bytecode (class file) that can run on any Java Virtual Machine (JVM) regardless of computer architecture. Java is a general-purpose, concurrent, class-based, object-oriented language that is specifically designed to have as few implementation dependencies as possible. It is intended to let application developers "write once, run anywhere.", meaning that code that runs on Windows does not need to be edited to run on a Mac. Java is currently one of the most popular programming languages in use, particularly for client-server web applications, with a reported 10 million users.
+The original and reference implementation Java compilers, virtual machines, and class libraries were developed by Sun from 1995. As of May 2007, in compliance with the specifications of the Java Community Process, Sun relicensed most of its Java technologies under the GNU General Public License. Others have also developed alternative implementations of these Sun technologies, such as the GNU Compiler for Java and GNU Classpath.
+.
+--
+Subject: Erlang  
+From: Egor
+Newsgroups: t1
+Date: Sat, 28 May 2011 18:51:10 +0200
+
+Erlang is a general-purpose concurrent, garbage-collected programming language and runtime system. The sequential subset of Erlang is a functional language, with strict evaluation, single assignment, and dynamic typing. For concurrency it follows the Actor model. It was designed by Ericsson to support distributed, fault-tolerant, soft-real-time, non-stop applications. It supports hot swapping, so that code can be changed without stopping a system.
+While threads are considered to be complicated and error-prone topic in most languages, Erlang provides language-level features for creating and managing processes with the aim of simplifying concurrent programming. Though all concurrency is explicit in Erlang, processes communicate using message passing instead of shared variables, which removes the need for locks.
+The first version was developed by Joe Armstrong in 1986. It was originally a proprietary language within Ericsson, but was released as open source in 1998.
+.
+--
+Subject: User-mode Linux 
+From: Egor
+Newsgroups: t1
+Date: Sat, 28 May 2011 18:51:10 +0200
+
+User-mode Linux (UML) enables multiple virtual Linux systems (known as guests) to run as an application within a normal Linux system (known as the host). As each guest is just a normal application running as a process in user space, this approach provides the user with a way of running multiple virtual Linux machines on a single piece of hardware, offering excellent security and safety[citation needed] without affecting the host environment's configuration or stability.
+.
+--
+Subject: Haskell 
+From: Egor
+Newsgroups: t1
+Date: Sat, 28 May 2011 18:51:10 +0200
+
+Haskell is a standardized, general-purpose purely functional programming language, with non-strict semantics and strong static typing. It is named after logician Haskell Curry. In Haskell, "a function is a first-class citizen" of the programming language. As a functional programming language, the primary control construct is the function. The language is rooted in the observations of Haskell Curry and his intellectual descendants, that "a proof is a program; the formula it proves is a type for the program".
+.
+--
