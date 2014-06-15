@@ -1,0 +1,11 @@
+ {application, erlnntp, [
+	{description, "Erlang NNTP Server"},
+	{vsn, "0.0.1"},
+	{modules, [
+	    configuration_handler, common_funcs, connection_handler, db_handler, 
+        db_routines, email_parser, message_parser, nntp_server
+	]},
+	{registered, [configuration_handler, nntp_server]},
+	{mod, {erlnntp_app, []}},
+	{applications, [kernel, stdlib]}
+]}.
