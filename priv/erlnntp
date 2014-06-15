@@ -1,0 +1,36 @@
+#!/usr/bin/env escript
+
+main(["start"]) ->
+    Dir = code:priv_dir(erlnntp),
+    file:set_cwd (Dir),
+    os:cmd ("run_erl -daemon /tmp/ /var/log/ \"exec erl -sname erlnntp -boot start_sasl -s startit -noshell -noinput\""),
+    timer:sleep(300),
+    {ok, _Pid} = net_kernel:start([foo, shortnames]),
+    Node = get_erlnntp_node(),
+    case net_adm:ping(Node) of
+        pong ->
+            io:format ("Application erlnntp has started~n",[]);
+        pang ->
+            io:format ("Application load failed. See logs~n",[])
+    end;
+
+main(["stop"]) ->
+    Dir = code:priv_dir(erlnntp),
+    file:set_cwd (Dir),
+    %%check if application is running
+    {ok, _Pid} = net_kernel:start([foo, shortnames]),
+    Node = get_erlnntp_node(),
+    case net_adm:ping(Node) of
+        pong ->
+            rpc:call (Node, init, stop, []), 
+            io:format ("Application erlnntp has stopped~n",[]);
+        pang ->
+            io:format ("Application erlnntp is not running!~n",[])
+    end;
+
+main(Args) ->
+    io:format ("usage: erlnntp start|stop~n~p",[Args]).
+
+get_erlnntp_node () ->
+    Hostname = string:strip (os:cmd ("hostname"), right, $\n),
+    list_to_atom ("erlnntp@" ++ Hostname).
