@@ -1,0 +1,3 @@
+-define (LOG_ERROR(Message), syslog:log(err, Message)).
+-define (LOG_WARNING(Message), case configuration_handler:read(conf_log_level) > 0 of true -> syslog:log (warning, Message); false -> ok end).
+-define (LOG_INFO(Message), case configuration_handler:read(conf_log_level) > 1 of true  -> syslog:log (info, Message); false -> ok end).
